@@ -8,7 +8,7 @@ module RubyLLM
         module_function
 
         def completion_url
-          "/model/#{@model.id}/converse"
+          "/model/#{encoded_model_id}/converse"
         end
 
         def render_payload(messages, tools:, temperature:, model:, stream: false, schema: nil, thinking: nil) # rubocop:disable Metrics/ParameterLists,Lint/UnusedMethodArgument

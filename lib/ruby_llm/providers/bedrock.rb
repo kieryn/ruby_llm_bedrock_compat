@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require 'cgi'
 
 module RubyLLM
   module Providers
@@ -58,6 +59,10 @@ module RubyLLM
 
       def bedrock_region
         @config.bedrock_region
+      end
+
+      def encoded_model_id
+        CGI.escape(@model.id.to_s).gsub('+', '%20')
       end
 
       def sync_response(connection, payload, additional_headers = {})

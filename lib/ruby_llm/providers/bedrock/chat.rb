@@ -23,7 +23,7 @@ module RubyLLM
           system_blocks = render_system(system_messages)
           payload[:system] = system_blocks unless system_blocks.empty?
 
-          payload[:inferenceConfig] = render_inference_config(model, temperature)
+          payload[:inferenceConfig] = render_inference_config(model, temperature) unless prompt_arn_model?(model)
 
           tool_config = render_tool_config(tools)
           if tool_config
@@ -35,6 +35,11 @@ module RubyLLM
           payload[:additionalModelRequestFields] = additional_fields if additional_fields
 
           payload
+        end
+
+        def prompt_arn_model?(model)
+          model_id = model&.id.to_s
+          model_id.start_with?('arn:aws:bedrock:') && model_id.include?(':prompt/')
         end
 
         def parse_completion_response(response)

@@ -21,6 +21,13 @@ module RubyLLM
 
       def complete(messages, tools:, temperature:, model:, params: {}, headers: {}, schema: nil, thinking: nil, &) # rubocop:disable Metrics/ParameterLists
         normalized_params = normalize_params(params, model:)
+        validate_prompt_arn_runtime_overrides!(
+          model: model,
+          messages: messages,
+          tools: tools,
+          temperature: temperature,
+          params: normalized_params
+        )
 
         super(
           messages,
@@ -80,6 +87,35 @@ module RubyLLM
 
         normalized[:additionalModelRequestFields] = additional_fields unless additional_fields.empty?
         normalized
+      end
+
+      def validate_prompt_arn_runtime_overrides!(model:, messages:, tools:, temperature:, params:)
+        return unless prompt_arn_model?(model)
+
+        if messages.any? { |message| message.role == :system }
+          raise UnsupportedPromptArnParameterError,
+                'Bedrock prompt ARN does not allow runtime system instructions. ' \
+                'Move instructions into the AWS prompt definition.'
+        end
+
+        if tools.any?
+          raise UnsupportedPromptArnParameterError,
+                'Bedrock prompt ARN does not allow runtime toolConfig. ' \
+                'Define tools in the AWS prompt resource.'
+        end
+
+        explicit_inference_config = params[:inferenceConfig]
+        has_explicit_inference_config = explicit_inference_config.is_a?(Hash) ? explicit_inference_config.any? : !explicit_inference_config.nil?
+        return unless !temperature.nil? || has_explicit_inference_config
+
+        raise UnsupportedPromptArnParameterError,
+              'Bedrock prompt ARN does not allow runtime inferenceConfig overrides. ' \
+              'Configure inference behavior in the AWS prompt resource.'
+      end
+
+      def prompt_arn_model?(model)
+        model_id = model&.id.to_s
+        model_id.start_with?('arn:aws:bedrock:') && model_id.include?(':prompt/')
       end
 
       def model_supports_top_k?(model)

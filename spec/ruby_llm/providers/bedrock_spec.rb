@@ -20,7 +20,7 @@ RSpec.describe RubyLLM::Providers::Bedrock do
     )
   end
 
-  let(:prompt_arn) { 'arn:aws:bedrock:us-east-1:123456789012:prompt/pm-abc123' }
+  let(:prompt_arn) { 'arn:aws:bedrock:region:account:prompt/resource' }
   let(:model) { instance_double(RubyLLM::Model::Info, id: prompt_arn) }
 
   before do
@@ -30,7 +30,7 @@ RSpec.describe RubyLLM::Providers::Bedrock do
   describe '#completion_url' do
     it 'URL-encodes model IDs for converse requests' do
       expect(provider.send(:completion_url)).to eq(
-        '/model/arn%3Aaws%3Abedrock%3Aus-east-1%3A123456789012%3Aprompt%2Fpm-abc123/converse'
+        '/model/arn%3Aaws%3Abedrock%3Aregion%3Aaccount%3Aprompt%2Fresource/converse'
       )
     end
   end
@@ -38,8 +38,38 @@ RSpec.describe RubyLLM::Providers::Bedrock do
   describe '#stream_url' do
     it 'URL-encodes model IDs for converse-stream requests' do
       expect(provider.send(:stream_url)).to eq(
-        '/model/arn%3Aaws%3Abedrock%3Aus-east-1%3A123456789012%3Aprompt%2Fpm-abc123/converse-stream'
+        '/model/arn%3Aaws%3Abedrock%3Aregion%3Aaccount%3Aprompt%2Fresource/converse-stream'
       )
+    end
+  end
+
+  describe '#validate_prompt_arn_runtime_overrides!' do
+    let(:messages) { [RubyLLM::Message.new(role: :user, content: 'hello')] }
+
+    it 'raises on explicit inferenceConfig overrides passed via params' do
+      expect do
+        provider.send(
+          :validate_prompt_arn_runtime_overrides!,
+          model: model,
+          messages: messages,
+          tools: {},
+          temperature: nil,
+          params: { inferenceConfig: { temperature: 0.2 } }
+        )
+      end.to raise_error(RubyLLM::UnsupportedPromptArnParameterError, /inferenceConfig/)
+    end
+
+    it 'does not raise for empty inferenceConfig params' do
+      expect do
+        provider.send(
+          :validate_prompt_arn_runtime_overrides!,
+          model: model,
+          messages: messages,
+          tools: {},
+          temperature: nil,
+          params: { inferenceConfig: {} }
+        )
+      end.not_to raise_error
     end
   end
 end

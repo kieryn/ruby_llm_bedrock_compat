@@ -21,11 +21,29 @@ module RubyLLM
           }
 
           system_blocks = render_system(system_messages)
+          if prompt_arn_model?(model) && !system_blocks.empty?
+            raise UnsupportedPromptArnParameterError,
+                  'Bedrock prompt ARN does not allow runtime system instructions. ' \
+                  'Move instructions into the AWS prompt definition.'
+          end
+
           payload[:system] = system_blocks unless system_blocks.empty?
+
+          if prompt_arn_model?(model) && !temperature.nil?
+            raise UnsupportedPromptArnParameterError,
+                  'Bedrock prompt ARN does not allow runtime inferenceConfig overrides. ' \
+                  'Configure inference behavior in the AWS prompt resource.'
+          end
 
           payload[:inferenceConfig] = render_inference_config(model, temperature) unless prompt_arn_model?(model)
 
           tool_config = render_tool_config(tools)
+          if prompt_arn_model?(model) && tool_config
+            raise UnsupportedPromptArnParameterError,
+                  'Bedrock prompt ARN does not allow runtime toolConfig. ' \
+                  'Define tools in the AWS prompt resource.'
+          end
+
           if tool_config
             payload[:toolConfig] = tool_config
             payload[:tools] = tool_config[:tools] # Internal mirror for shared payload inspections in specs.

@@ -16,6 +16,7 @@ module RubyLLM
   class ConfigurationError < StandardError; end
   class InvalidRoleError < StandardError; end
   class ModelNotFoundError < StandardError; end
+  class UnsupportedPromptArnParameterError < StandardError; end
   class UnsupportedAttachmentError < StandardError; end
 
   # Error classes for different HTTP status codes

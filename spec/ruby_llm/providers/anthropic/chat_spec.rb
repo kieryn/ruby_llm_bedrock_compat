@@ -27,6 +27,19 @@ RSpec.describe RubyLLM::Providers::Anthropic::Chat do
       expect(payload[:system]).to eq(system_raw.value)
       expect(payload[:messages].first[:content]).to eq([{ type: 'text', text: 'Hello there' }])
     end
+
+    it 'keeps temperature behavior unchanged' do
+      payload = described_class.render_payload(
+        [RubyLLM::Message.new(role: :user, content: 'Hello there')],
+        tools: {},
+        temperature: 0.2,
+        model: model,
+        stream: false,
+        schema: nil
+      )
+
+      expect(payload[:temperature]).to eq(0.2)
+    end
   end
 
   describe '.parse_completion_response' do

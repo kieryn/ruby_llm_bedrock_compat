@@ -8,7 +8,7 @@ module RubyLLM
         private
 
         def stream_url
-          "/model/#{@model.id}/converse-stream"
+          "/model/#{encoded_model_id}/converse-stream"
         end
 
         def stream_response(connection, payload, additional_headers = {}, &block)
